@@ -47,6 +47,7 @@ module Jekyll
         read_tags
         read_categories
         read_dates
+        read_languages
       end
 
       def read_tags
@@ -77,11 +78,21 @@ module Jekyll
         end
       end
 
+      def read_languages
+        if enabled? "languages"
+          locales.each do |locale, posts|
+            @archives << Archive.new(@site, locale, "lang", posts)
+          end
+        end
+      end
+
       # Checks if archive type is enabled in config
       def enabled?(archive)
-        @config["enabled"] == true || @config["enabled"] == "all" || if @config["enabled"].is_a? Array
-                                                                       @config["enabled"].include? archive
+        if @config["enabled"].is_a? Array
+          return @config["enabled"].include? archive
         end
+
+        @config["enabled"] == true || @config["enabled"] == "all"
       end
 
       def tags
@@ -118,6 +129,13 @@ module Jekyll
         month_posts.each { |p| hash[p.date.strftime("%d")] << p }
         hash.values.each { |posts| posts.sort!.reverse! }
         hash
+      end
+
+      # jekyll-feed expects a key-value of `lang`.
+      # this supports values as both arrays and single strings since we are using our patched fork of Jekyll
+      # see https://github.com/sensortower/jekyll/commit/599a6b1b10e364b064728dfe460eeb671eeff129
+      def locales
+        @site.post_attr_hash("lang").to_a
       end
     end
   end
